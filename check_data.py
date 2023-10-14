@@ -2,10 +2,10 @@ import json
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 from glob import glob
 
-from pydantic import BaseModel, ValidationError, validate_model
+from pydantic import BaseModel, ValidationError
 
 from data_types import CodeData, ForumData, ParallelData, QaData
 
@@ -19,13 +19,11 @@ class DataChecker:
         self.type_list: List[BaseModel] = [QaData, CodeData, ForumData, ParallelData]
 
     def read_head(self, dataset_path: str, k: int = 100):
-        datasets = []
         with open(dataset_path, 'r', encoding='utf-8') as f:
             for idx, line in enumerate(f):
                 if k > 0 and idx >= k:
                     break
-                datasets.append(json.loads(line))
-        return datasets
+                yield json.loads(line)
     
     def get_keys(self, data: Dict, prefix='', depth=1, max_depth=1):
         if depth > max_depth:
@@ -44,7 +42,7 @@ class DataChecker:
         type_cls = None
         for data_type in self.type_list:
             try:
-                data_type.parse_obj(data)
+                data_type(**data)
                 type_cls = data_type
             except:
                 continue
@@ -75,10 +73,10 @@ class DataChecker:
             error_info = ", ".join(list(values)[:3])
             if len(values) >= 3:
                 error_info += ', ...'
-            if key == 'value_error.missing':
+            if key == 'missing':
                 errors.append(f'missing error, missing keys: [{error_info}]')
-            elif 'type_error' in key:
-                _, expected_type = key.split('.')
+            elif 'type' in key:
+                expected_type, _ = key.split('_')
                 errors.append(f'type error, error keys: [{error_info}], expected type `{expected_type}`')
             else:
                 errors.append(f'other error, error keys: [{error_info}]')
@@ -89,29 +87,34 @@ class DataChecker:
         data: Dict, 
         type_cls: BaseModel,
     ):
-        _, _, validation_error = validate_model(type_cls, data)
-        if validation_error is None:
+        try:
+            type_cls(**data)
             return True, ''
-        error_info = self.parser_errors(validation_error)
-        return False, error_info
+        except ValidationError as e:
+            error_info = self.parser_errors(e)
+            return False, error_info
 
     def check_file(self, dataset_path: str, k: int=10):
-        logging.info(f'checking file: {dataset_path}')
-        datasets = self.read_head(dataset_path, k)
+        logger.info(f'checking dataset: {dataset_path}')
         dataset_name = os.path.basename(dataset_path)
-        first = datasets[0]
-        type_cls, score = self.get_data_type(first)        
-        if score == 1.0:
-            logger.info(f"the type of dataset {dataset_name} is {type_cls.name()}")
-        elif score > 0:
-            logger.warning(f"can not match data type, the most similar type of dataset {dataset_name} is {type_cls.name()}, similar score is {score:.4f}.")
-        else:
-            logger.error("can not match any data type and can not find similar data type.")
-            return
+        datasets = self.read_head(dataset_path, k)
+        right_num_line = 0
         for idx, line_data in enumerate(datasets):
+            if idx == 0:
+                first = line_data
+                type_cls, score = self.get_data_type(first)        
+                if score == 1.0:
+                    logger.info(f"the type of dataset {dataset_name} is {type_cls.name()}")
+                elif score > 0:
+                    logger.warning(f"can not match data type, the most similar type of dataset {dataset_name} is {type_cls.name()}, similar score is {score:.4f}.")
+                else:
+                    logger.error("can not match any data type and can not find similar data type.")
             is_matched, info = self.check_line(line_data, type_cls)
             if not is_matched:
                 logger.error(f" dataset {dataset_name} line {idx}: {info}")
+            else:
+                right_num_line += 1
+        logger.info(f"check dataset {dataset_name} finished, right line {right_num_line} / total check line {idx + 1}")
     
     def check_folder(
         self, 
