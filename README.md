@@ -18,5 +18,22 @@ pip install -r requirements.txt
 
 ## 运行
 ```bash
-python check_data.py  --dataset data/
+python check_data.py  --dataset data/ --k 100
 ```
+
+## 运行说明
+
+### 参数说明
+- --dataset 待检查的数据文件名或者目录
+- --k 抽样检查每个文件top k行
+
+### 输出
+- 正确的语料格式：the type of dataset {your data} is ...数据
+- 错误的语料格式: can not match data type, the most similar type of dataset {your data} is ...格式, similar score is ...
+
+错误的语料格式会提示错误类型和错误行号(从0 开始)：
+- 字段缺失: line: ...: missing error, missing keys: ...
+- 字段数据类型错误: line ...: type error, error keys: ..., expected type ...
+
+检查完成后，会提示检查完成：
+check dataset {your data} finished, right line ... / total check line ...
