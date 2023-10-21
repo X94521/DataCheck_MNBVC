@@ -17,6 +17,13 @@ pip install -r requirements.txt
 ```
 
 ## 运行
+
+检查每个文件所有行并输出到日志文件logs/check_log.txt，检查结果请到logs目录下查看
+```bash
+python check_data.py --dataset data
+```
+
+检查每个文件 top 100 行
 ```bash
 python check_data.py  --dataset data/ --k 100
 ```
@@ -24,8 +31,8 @@ python check_data.py  --dataset data/ --k 100
 ## 运行说明
 
 ### 参数说明
-- --dataset 待检查的数据文件名或者目录
-- --k 抽样检查每个文件top k行
+- --dataset 待检查的数据文件名或者目录，必选参数
+- --k 抽样检查每个文件top k行, 可选参数，默认检查每个文件所有行
 
 ### 输出
 - 正确的语料格式：the type of dataset {your data} is ...数据
