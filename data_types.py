@@ -10,7 +10,7 @@ class QaMetaData(BaseModel):
 
 
 class QaData(BaseModel):
-    id: Union[int, str]
+    id: int
     问: str
     答: str
     来源: str
@@ -19,6 +19,18 @@ class QaData(BaseModel):
     @classmethod
     def name(cls):
         return '对话/问答语料数据'
+
+
+class MultiQaData(BaseModel):
+    id: str
+    问: str
+    答: str
+    来源: str
+    元数据: QaMetaData
+
+    @classmethod
+    def name(cls):
+        return '多轮对话/问答语料数据'
 
 
 class CodeData(BaseModel):
@@ -38,13 +50,13 @@ class CodeData(BaseModel):
 
 
 class ForumResponse(BaseModel):
-    楼ID: Union[int, str]
+    楼ID: str
     回复: str
     扩展字段: str
 
 
 class ForumData(BaseModel):
-    ID: Union[str, int]
+    ID: int
     主题: str
     来源: str
     回复: List[ForumResponse]

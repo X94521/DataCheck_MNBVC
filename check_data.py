@@ -7,12 +7,12 @@ from glob import glob
 
 from pydantic import BaseModel, ValidationError
 
-from data_types import CodeData, ForumData, ParallelData, QaData
+from data_types import CodeData, ForumData, ParallelData, QaData, MultiQaData, CommonData
 
 
 class DataChecker:
     def __init__(self) -> None:
-        self.type_list: List[BaseModel] = [QaData, CodeData, ForumData, ParallelData]
+        self.type_list: List[BaseModel] = [QaData, CodeData, ForumData, ParallelData, CommonData]
 
     def read_head(self, dataset_path: str, k: int):
         with open(dataset_path, 'r', encoding='utf-8') as f:
@@ -54,7 +54,10 @@ class DataChecker:
             score = 1 - (distance / len((type_keys | keys)))
             type_match_scores.append((data_type, score))
         type_match_scores = sorted(type_match_scores, key=lambda x: x[1], reverse=True)
-        return type_match_scores[0]
+        type_cls, score = type_match_scores[0]
+        if 'id' in data and isinstance(data['id'], str):
+            type_cls = MultiQaData
+        return type_cls, score
 
     def parser_errors(self, validation_error: ValidationError):
         error_map = defaultdict(set)

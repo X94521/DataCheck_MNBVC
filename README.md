@@ -44,3 +44,9 @@ python check_data.py  --dataset data/ --k 100
 
 检查完成后，会提示检查完成：
 check dataset {your data} finished, right line ... / total check line ...
+
+
+# ⚠️
+问答和多轮问答语料格式只有 id 字段的数据类型存在差异
+- 问答的 id 字段为 int 类型
+- 多轮问答的 id 为 string 类型
