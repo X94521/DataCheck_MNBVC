@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Any, Dict
 
 
 class QaMetaData(BaseModel):
@@ -37,7 +37,7 @@ class CodeData(BaseModel):
         return '代码语料数据'
 
 
-class ForumMetaData(BaseModel):
+class ForumResponse(BaseModel):
     楼ID: Union[int, str]
     回复: str
     扩展字段: str
@@ -47,8 +47,8 @@ class ForumData(BaseModel):
     ID: Union[str, int]
     主题: str
     来源: str
-    回复: List
-    元数据: ForumMetaData
+    回复: List[ForumResponse]
+    元数据: Any
 
     @classmethod
     def name(cls):
@@ -93,7 +93,33 @@ class ParallelData(BaseModel):
         return '平行语料格式'
 
 
+class CommonParagraph(BaseModel):
+    行号: int
+    是否重复: bool
+    是否跨文件重复: bool
+    md5: str
+    内容: str
+
+
+class CommonData(BaseModel):
+    文件名: str
+    是否待查文件: bool
+    是否重复文件: bool
+    文件大小: int
+    simhash: int
+    最长段落长度: int
+    段落数: int
+    去重段落数: int
+    低质量段落数: int
+    段落: List[CommonParagraph]
+
+    @classmethod
+    def name(cls):
+        return '通用语料格式'
+
+
 if __name__ == "__main__":
+    import json
     json_data = """{
         "id":123456,
         "问":"写一个超短小说",
@@ -106,10 +132,10 @@ if __name__ == "__main__":
             "扩展字段":""
         }
     }"""
-    data = QaData.parse_raw(json_data)
+    data = QaData(**json.loads(json_data))
     print(data)
     print('----------------------------------------')
-    print(data.dict())
+    print(data.model_dump())
     print('----------------------------------------')
-    print(data.json(ensure_ascii=False))
+    print(data.model_dump_json())
     print(QaData.__name__)
