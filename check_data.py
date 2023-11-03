@@ -78,7 +78,7 @@ class DataChecker:
                 expected_type, _ = key.split('_')
                 errors.append(f'type error, error keys: [{error_info}], expected type `{expected_type}`')
             else:
-                errors.append(f'other error, error keys: [{error_info}]')
+                errors.append(f'other error, error keys: [{error_info}], error info: {key}')
         return '; '.join(errors)
     
     def check_line(

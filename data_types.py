@@ -1,5 +1,7 @@
-from pydantic import BaseModel
-from typing import List, Union, Optional, Any, Dict
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import BaseModel, field_validator
 
 
 class QaMetaData(BaseModel):
@@ -8,6 +10,14 @@ class QaMetaData(BaseModel):
     回答明细: str
     扩展字段: Optional[str]
 
+    @field_validator("create_time")
+    def time_format(cls, v):
+        format_string = "%Y%m%d %H:%M:%S"
+        try:
+            datetime.strptime(v, format_string)
+            return v
+        except Exception as e:
+            raise e
 
 class QaData(BaseModel):
     id: int
@@ -21,12 +31,36 @@ class QaData(BaseModel):
         return '对话/问答语料数据'
 
 
+class MultiQAExtension(BaseModel):
+    会话: int
+    多轮序号: int
+
+
+class MultiQaMetaData(BaseModel):
+    create_time: str
+    问题明细: str
+    回答明细: str
+    扩展字段: str
+
+    @field_validator("create_time")
+    def time_format(cls, v):
+        format_string = "%Y%m%d %H:%M:%S"
+        datetime.strptime(v, format_string)
+        return v
+
+    
+    @field_validator("扩展字段")
+    def extension_format(cls, v):
+        MultiQAExtension.model_validate_json(v)
+        return v
+
+
 class MultiQaData(BaseModel):
     id: str
     问: str
     答: str
     来源: str
-    元数据: QaMetaData
+    元数据: MultiQaMetaData
 
     @classmethod
     def name(cls):
