@@ -9,7 +9,7 @@
 - [CodeData-代码语料](https://github.com/esbatmop/githubcode_extractor_mnbvc)
 - [ForumData-论坛语料](https://github.com/aplmikex/forum_dialogue_mnbvc)
 - [ParallelData-平行语料](https://github.com/liyongsea/parallel_corpus_mnbvc)
-
+- [CommonData](https://github.com/esbatmop/deduplication_mnbvc)
 
 ## 环境安装
 ```bash
