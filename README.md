@@ -5,7 +5,7 @@
 
 
 - [QaData-单论对话语料](https://github.com/esbatmop/WikiHowQAExtractor-mnbvc)
-- [QaData-多轮对话语料](https://github.com/pany8125/ShareGPTQAExtractor-mnbvc)
+- [MultiQaData-多轮对话语料](https://github.com/pany8125/ShareGPTQAExtractor-mnbvc)
 - [CodeData-代码语料](https://github.com/esbatmop/githubcode_extractor_mnbvc)
 - [ForumData-论坛语料](https://github.com/aplmikex/forum_dialogue_mnbvc)
 - [ParallelData-平行语料](https://github.com/liyongsea/parallel_corpus_mnbvc)
@@ -50,3 +50,6 @@ check dataset {your data} finished, right line ... / total check line ...
 问答和多轮问答语料格式只有 id 字段的数据类型存在差异，在扩展字段存在差异，其它部分一致
 - 问答的 id 字段为 int 类型
 - 多轮问答的 id 为 string 类型
+- 多轮问答的扩展字段为 json 字符串，且必须包含会话和多轮序号字段，字段类型为 int 类型
+
+问答和多轮问答会检查 create_time时间格式，要求时间格式为```%Y%m%d %H:%M:%S```
