@@ -123,6 +123,7 @@ class ParallelParagraph(BaseModel):
     th_text: str
     other1_text: str
     other2_text: str
+    扩展字段: str
 
 
 class ParallelData(BaseModel):
@@ -133,6 +134,7 @@ class ParallelData(BaseModel):
     去重段落数: int
     低质量段落数: int
     段落: List[ParallelParagraph]
+    扩展字段: str
 
     @classmethod
     def name(cls):
@@ -145,6 +147,7 @@ class CommonParagraph(BaseModel):
     是否跨文件重复: bool
     md5: str
     内容: str
+    扩展字段: str
 
 
 class CommonData(BaseModel):
@@ -158,6 +161,7 @@ class CommonData(BaseModel):
     去重段落数: int
     低质量段落数: int
     段落: List[CommonParagraph]
+    扩展字段: str
 
     @classmethod
     def name(cls):
