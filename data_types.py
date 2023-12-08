@@ -25,6 +25,7 @@ class QaData(BaseModel):
     答: str
     来源: str
     元数据: QaMetaData
+    时间: str
 
     @classmethod
     def name(cls):
@@ -61,6 +62,7 @@ class MultiQaData(BaseModel):
     答: str
     来源: str
     元数据: MultiQaMetaData
+    时间: str
 
     @classmethod
     def name(cls):
@@ -77,6 +79,7 @@ class CodeData(BaseModel):
     原始编码: str
     md5:str
     text: str
+    时间: str
 
     @classmethod
     def name(cls):
@@ -95,6 +98,7 @@ class ForumData(BaseModel):
     来源: str
     回复: List[ForumResponse]
     元数据: Any
+    时间: str
 
     @classmethod
     def name(cls):
@@ -135,6 +139,7 @@ class ParallelData(BaseModel):
     低质量段落数: int
     段落: List[ParallelParagraph]
     扩展字段: str
+    时间: str
 
     @classmethod
     def name(cls):
@@ -162,6 +167,7 @@ class CommonData(BaseModel):
     低质量段落数: int
     段落: List[CommonParagraph]
     扩展字段: str
+    时间: str
 
     @classmethod
     def name(cls):
