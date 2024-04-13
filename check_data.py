@@ -133,7 +133,9 @@ if __name__ == "__main__":
     parser.add_argument('--k', type=int, required=False, help='check top k line of each file')
     args = parser.parse_args()
 
-    fh = logging.FileHandler('logs/check_log.txt')
+    log_dir = './logs/'
+    os.makedirs(log_dir, exist_ok=True)
+    fh = logging.FileHandler(os.path.join(log_dir, 'check_log.txt'))
     fh.setLevel(logging.INFO)
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)

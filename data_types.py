@@ -125,6 +125,9 @@ class ParallelParagraph(BaseModel):
     sv_text: str
     ko_text: str
     th_text: str
+    id_text: str
+    vi_text: str
+    cht_text: str
     other1_text: str
     other2_text: str
     扩展字段: str
