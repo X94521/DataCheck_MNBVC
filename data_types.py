@@ -111,26 +111,26 @@ class ParallelParagraph(BaseModel):
     zh_text_md5: str
     zh_text: str
     en_text: str
-    ar_text: str
-    nl_text: str
-    de_text: str
-    eo_text: str
-    fr_text: str
-    he_text: str
-    it_text: str
-    ja_text: str
-    pt_text: str
-    ru_text: str
-    es_text: str
-    sv_text: str
-    ko_text: str
-    th_text: str
-    id_text: str
-    vi_text: str
-    cht_text: str
-    other1_text: str
-    other2_text: str
-    扩展字段: str
+    ar_text: Optional[str] = ''
+    nl_text: Optional[str] = ''
+    de_text: Optional[str] = ''
+    eo_text: Optional[str] = ''
+    fr_text: Optional[str] = ''
+    he_text: Optional[str] = ''
+    it_text: Optional[str] = ''
+    ja_text: Optional[str] = ''
+    pt_text: Optional[str] = ''
+    ru_text: Optional[str] = ''
+    es_text: Optional[str] = ''
+    sv_text: Optional[str] = ''
+    ko_text: Optional[str] = ''
+    th_text: Optional[str] = ''
+    id_text: Optional[str] = ''
+    vi_text: Optional[str] = ''
+    cht_text: Optional[str] = ''
+    other1_text: Optional[str] = ''
+    other2_text: Optional[str] = ''
+    扩展字段: Optional[str] = ''
 
 
 class ParallelData(BaseModel):
@@ -141,7 +141,7 @@ class ParallelData(BaseModel):
     去重段落数: int
     低质量段落数: int
     段落: List[ParallelParagraph]
-    扩展字段: str
+    扩展字段: Optional[str] = ''
     时间: str
 
     @classmethod
