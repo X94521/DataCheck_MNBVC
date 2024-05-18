@@ -69,9 +69,7 @@ class DataChecker:
             error_map[error['type']].add(error_info)
         errors = []
         for key, values in error_map.items():
-            error_info = ", ".join(list(values)[:3])
-            if len(values) >= 3:
-                error_info += ', ...'
+            error_info = ", ".join(list(values))
             if key == 'missing':
                 errors.append(f'missing error, missing keys: [{error_info}]')
             elif 'type' in key:
