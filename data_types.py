@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
@@ -175,6 +176,41 @@ class CommonData(BaseModel):
     @classmethod
     def name(cls):
         return '通用语料格式'
+
+class MultiModelDataModel(BaseModel):
+    md5: str
+    文件id: Union[int, None]
+    块id: Union[int, None]
+    文本: Union[str, None]
+    图片: Any
+    时间: str
+    数据类型: str
+    bounding_box: str
+    扩展字段: str
+
+    @classmethod
+    def name(cls):
+        return '多模态语料格式'
+
+    @field_validator("bounding_box")
+    def bounding_box_format(cls, v):
+        data_list = json.loads(v)
+        assert isinstance(data_list, list)
+        for box in data_list:
+            assert isinstance(box, list)
+            assert len(box) == 4
+
+expected_fields = {  
+    "md5": "string",  
+    "文件id": "int64",  
+    "块id": "int64",  
+    "文本": "string",  
+    "图片": "binary",   
+    "时间": "string", 
+    "数据类型": "string",  
+    "bounding_box":  "string",
+    "扩展字段": "string",
+}  
 
 
 if __name__ == "__main__":

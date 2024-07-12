@@ -7,12 +7,12 @@ from glob import glob
 
 from pydantic import BaseModel, ValidationError
 
-from data_types import CodeData, ForumData, ParallelData, QaData, MultiQaData, CommonData
+from data_types import CodeData, ForumData, ParallelData, QaData, MultiQaData, CommonData, MultiModelDataModel, expected_fields
 
 
 class DataChecker:
     def __init__(self) -> None:
-        self.type_list: List[BaseModel] = [QaData, CodeData, ForumData, ParallelData, CommonData]
+        self.type_list: List[BaseModel] = [QaData, CodeData, ForumData, ParallelData, CommonData, MultiModelDataModel]
 
     def read_head(self, dataset_path: str, k: int):
         with open(dataset_path, 'r', encoding='utf-8') as f:
@@ -20,6 +20,19 @@ class DataChecker:
                 if k is not None and k > 0 and idx >= k:
                     break
                 yield json.loads(line)
+
+    def read_parquet_head(self, dataset_path: str, k: int):
+        parquet_file = pq.ParquetFile(dataset_path)
+        columns = parquet_file.schema.names
+        data = []
+        for idx in range(parquet_file.num_row_groups):
+            if k is not None and k > 0 and idx >= k:
+                break
+            table = parquet_file.read_row_group(idx).to_pandas()
+            # table = row_group.to_table(schema=parquet_file.schema, columns=columns)
+            for _, row in table.iterrows():
+                row_data = {column: row[column] for column in columns}
+            yield row_data
 
     def get_keys(self, data: Dict, prefix='', depth=1, max_depth=1):
         if depth > max_depth:
@@ -95,6 +108,12 @@ class DataChecker:
 
     def check_file(self, dataset_path: str, k: int):
         logger.info(f'checking dataset: {dataset_path}')
+        if dataset_path.endswith('.parquet'):
+            self.check_parquet(dataset_path, k)
+        else:
+            self.check_jsonl(dataset_path, k)
+
+    def check_jsonl(self, dataset_path: str, k: int):
         dataset_name = os.path.basename(dataset_path)
         datasets = self.read_head(dataset_path, k)
         right_num_line = 0
@@ -115,6 +134,47 @@ class DataChecker:
                 right_num_line += 1
         logger.info(f"check dataset {dataset_name} finished, right line {right_num_line} / total check line {idx + 1}")
     
+    def check_parquet(self, dataset_path: str, k: int):
+        dataset_name = os.path.basename(dataset_path)
+        schema = pq.read_schema(dataset_path) 
+        for field in schema:
+            print(field.name, type(str(field.type)))
+        actual_fields = {field.name: str(field.type) for field in schema}  
+    
+        lost_keys = []
+        not_match_keys = []
+        for name, expected_type in expected_fields.items():
+            if name not in actual_fields:
+                lost_keys.append(f"can not match MutilModel data type, lost key {name}")
+            if actual_fields[name] != expected_type:
+                not_match_keys.append(f"key {name} data type not match, expected {expected_type}, got {actual_fields[name]}"  )  
+
+        if len(lost_keys) or len(not_match_keys):
+            error = '\n'.join(lost_keys + not_match_keys)
+            logger.warning(error)
+        logger.info(f"check dataset {dataset_name} finished, schema is right")
+
+        datasets = self.read_parquet_head(dataset_path, k)
+        right_num_line = 0
+        for idx, line_data in enumerate(datasets):
+            if idx == 0:
+                first = line_data
+                type_cls, score = self.get_data_type(first)        
+                if score == 1.0:
+                    logger.info(f"the type of dataset {dataset_name} is {type_cls.name()}")
+                elif score > 0:
+                    logger.warning(f"can not match data type, the most similar type of dataset {dataset_name} is {type_cls.name()}, similar score is {score:.4f}.")
+                else:
+                    logger.error("can not match any data type and can not find similar data type.")
+            is_matched, info = self.check_line(line_data, type_cls)
+            if not is_matched:
+                logger.error(f" dataset {dataset_name} line {idx}: {info}")
+            else:
+                right_num_line += 1
+        logger.info(f"check dataset {dataset_name} finished, right line {right_num_line} / total check line {idx + 1}")
+
+
+
     def check_folder(
         self, 
         dataset_dir: str, 
@@ -125,13 +185,22 @@ class DataChecker:
                 continue
             self.check_file(file_path, k = k)
 
+        for file_path in sorted(glob(f"{dataset_dir}/*.parquet")):
+            if not os.path.isfile(file_path):
+                continue
+            self.check_file(file_path, k = k)
+
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True, help='dataset path or dataset dir')
     parser.add_argument('--k', type=int, required=False, help='check top k line of each file')
+    parser.add_argument('--use_pyarrow', action='store_true', help='check top k line of each file')
     args = parser.parse_args()
+    
+    if args.use_pyarrow:
+        import pyarrow.parquet as pq
 
     log_dir = './logs/'
     os.makedirs(log_dir, exist_ok=True)
