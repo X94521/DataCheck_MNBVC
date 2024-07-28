@@ -178,38 +178,37 @@ class CommonData(BaseModel):
         return '通用语料格式'
 
 class MultiModelDataModel(BaseModel):
-    md5: str
-    文件id: Union[int, None]
-    块id: Union[int, None]
+    实体ID: Union[str, None]
+    块ID: Union[int, None]
+    时间: str
+    扩展字段: str
     文本: Union[str, None]
     图片: Any
-    时间: str
-    数据类型: str
-    bounding_box: str
-    扩展字段: str
+    OCR文本: Union[str, None]
+    音频: Any
+    STT文本: Union[str, None]
+    块类型: str
+    md5: str
+    页ID: Union[int, None]
 
     @classmethod
     def name(cls):
         return '多模态语料格式'
 
-    @field_validator("bounding_box")
-    def bounding_box_format(cls, v):
-        data_list = json.loads(v)
-        assert isinstance(data_list, list)
-        for box in data_list:
-            assert isinstance(box, list)
-            assert len(box) == 4
 
 expected_fields = {  
-    "md5": "string",  
-    "文件id": "int64",  
-    "块id": "int64",  
-    "文本": "string",  
-    "图片": "binary",   
+    "实体ID": "string",  
+    "块ID": "int64",  
     "时间": "string", 
-    "数据类型": "string",  
-    "bounding_box":  "string",
     "扩展字段": "string",
+    "文本": "string",  
+    "图片": "binary",
+    "OCR文本": "string",  
+    "音频": "binary",
+    "STT文本": 'string',
+    "块类型": "string",  
+    "md5": "string",   
+    "页ID":  "int64",
 }  
 
 

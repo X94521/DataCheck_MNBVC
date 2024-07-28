@@ -137,8 +137,6 @@ class DataChecker:
     def check_parquet(self, dataset_path: str, k: int):
         dataset_name = os.path.basename(dataset_path)
         schema = pq.read_schema(dataset_path) 
-        for field in schema:
-            print(field.name, type(str(field.type)))
         actual_fields = {field.name: str(field.type) for field in schema}  
     
         lost_keys = []
@@ -146,7 +144,8 @@ class DataChecker:
         for name, expected_type in expected_fields.items():
             if name not in actual_fields:
                 lost_keys.append(f"can not match MutilModel data type, lost key {name}")
-            if actual_fields[name] != expected_type:
+                continue
+            if actual_fields[name] != expected_type and actual_fields[name] != "null":
                 not_match_keys.append(f"key {name} data type not match, expected {expected_type}, got {actual_fields[name]}"  )  
 
         if len(lost_keys) or len(not_match_keys):
