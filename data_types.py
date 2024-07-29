@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
@@ -175,6 +176,40 @@ class CommonData(BaseModel):
     @classmethod
     def name(cls):
         return '通用语料格式'
+
+class MultiModelDataModel(BaseModel):
+    实体ID: Union[str, None]
+    块ID: Union[int, None]
+    时间: str
+    扩展字段: str
+    文本: Union[str, None]
+    图片: Any
+    OCR文本: Union[str, None]
+    音频: Any
+    STT文本: Union[str, None]
+    块类型: str
+    md5: str
+    页ID: Union[int, None]
+
+    @classmethod
+    def name(cls):
+        return '多模态语料格式'
+
+
+expected_fields = {  
+    "实体ID": "string",  
+    "块ID": "int64",  
+    "时间": "string", 
+    "扩展字段": "string",
+    "文本": "string",  
+    "图片": "binary",
+    "OCR文本": "string",  
+    "音频": "binary",
+    "STT文本": 'string',
+    "块类型": "string",  
+    "md5": "string",   
+    "页ID":  "int64",
+}  
 
 
 if __name__ == "__main__":
