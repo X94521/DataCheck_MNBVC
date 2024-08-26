@@ -13,6 +13,13 @@ from data_types import CodeData, ForumData, ParallelData, QaData, MultiQaData, C
 class DataChecker:
     def __init__(self) -> None:
         self.type_list: List[BaseModel] = [QaData, CodeData, ForumData, ParallelData, CommonData, MultiModelDataModel]
+        self.max_file_size = 512 * 1024 * 1024
+
+    def check_file_size(self, file_path):
+        file_size = os.path.getsize(file_path)
+        if file_size > self.max_file_size:
+            logger.error(f"file size out of range, max size is {self.max_file_size/1024/1024}MB, get size {file_size/1024/1024:.2f}MB.")
+            raise ValueError(f"file size out of range, max size is {self.max_file_size/1024/1024}MB, get size {file_size/1024/1024:.2f}MB.")
 
     def read_head(self, dataset_path: str, k: int):
         with open(dataset_path, 'r', encoding='utf-8') as f:
@@ -108,6 +115,7 @@ class DataChecker:
 
     def check_file(self, dataset_path: str, k: int):
         logger.info(f'checking dataset: {dataset_path}')
+        self.check_file_size(dataset_path)
         if dataset_path.endswith('.parquet'):
             self.check_parquet(dataset_path, k)
         else:
