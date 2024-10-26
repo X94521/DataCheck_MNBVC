@@ -7,12 +7,14 @@ from glob import glob
 
 from pydantic import BaseModel, ValidationError
 
-from data_types import CodeData, ForumData, ParallelData, QaData, MultiQaData, CommonData, MultiModelDataModel, expected_fields
+from data_types import CodeData, ForumData, ParallelData, QaData, MultiQaData, \
+    CommonData, MultiModelDataModel, CommitDataModel, expected_fields
 
 
 class DataChecker:
     def __init__(self) -> None:
-        self.type_list: List[BaseModel] = [QaData, CodeData, ForumData, ParallelData, CommonData, MultiModelDataModel]
+        self.type_list: List[BaseModel] = [QaData, CodeData, ForumData, ParallelData,
+                                           CommonData, MultiModelDataModel, CommitDataModel]
         self.max_file_size = 512 * 1024 * 1024
 
     def check_file_size(self, file_path):

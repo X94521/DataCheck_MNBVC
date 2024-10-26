@@ -196,6 +196,25 @@ class MultiModelDataModel(BaseModel):
         return '多模态语料格式'
 
 
+class CommitDataModel(BaseModel):
+    '''每行是一个文本的数据，对应一个代码仓库里的一个文本文件的变更。'''
+    来源: str
+    仓库名: str
+    path: str
+    文件名: str
+    ext: str
+    index: str
+    message: str
+    diff: str
+    原始编码: str
+    md5: str
+    时间: str
+    扩展字段: str
+
+    @classmethod
+    def name(cls):
+        return 'Commit 语料格式'
+
 expected_fields = {  
     "实体ID": "string",  
     "块ID": "int64",  
