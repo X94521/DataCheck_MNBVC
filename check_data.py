@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple
 from glob import glob
 
 from pydantic import BaseModel, ValidationError
+from charset_mnbvc import api
 
 from data_types import CodeData, ForumData, ParallelData, QaData, MultiQaData, \
     CommonData, MultiModelDataModel, CommitDataModel, expected_fields
@@ -59,8 +60,6 @@ class DataChecker:
     def check_language_ratio(self, text: bytes) -> Tuple[int, float]:
         '''检查中英文比例，要求输入为 bytes'''
         ret, percentage = api.check_zh_en(text)
-        if not ret:
-            logger.info(f"发现文本为非中英, 非中英比例为{percentage}, 示例：{text[:200]}(仅展示前200个字符)")
         return ret, percentage
 
     def get_data_type(self, data: Dict) -> Tuple[BaseModel, float]:
@@ -136,9 +135,11 @@ class DataChecker:
         right_num_line = 0
         num_line = 0
         zh_en_num = 0
+        perc_sum = 0
         for idx, line_data in enumerate(datasets):
             num_line += 1
             ret, perc = self.check_language_ratio(line_data)
+            perc_sum += perc
             if ret:
                 zh_en_num += 1
             if idx == 0:
@@ -155,8 +156,11 @@ class DataChecker:
                 logger.error(f" dataset {dataset_name} line {idx}: {info}")
             else:
                 right_num_line += 1
+        
+        text_percent = perc_sum / num_line
         logger.info(f"check dataset {dataset_name} finished, right line {right_num_line} / total check line {idx + 1}")
-        logger.info(f"检查每行信息是否为中文或英文信息，总共检查{num_line}条，中英文数据{zh_en_num}条，中英文占比{zh_en_num/num_line*100:.2f}%")
+        logger.info(f"检查每行信息是否为中文或英文信息，总共检查{num_line}条，中英文数据{zh_en_num}条，中英文行数占比{zh_en_num/num_line*100:.2f}%, "
+                    f"中英文文本总量{text_percent*100:.2f}%, 示例数据：{str(line_data)[:1000]}")
     
     def check_parquet(self, dataset_path: str, k: int):
         dataset_name = os.path.basename(dataset_path)
@@ -179,7 +183,15 @@ class DataChecker:
 
         datasets = self.read_parquet_head(dataset_path, k)
         right_num_line = 0
+        num_line = 0
+        zh_en_num = 0
+        perc_sum = 0
         for idx, line_data in enumerate(datasets):
+            num_line += 1
+            ret, perc = self.check_language_ratio(line_data)
+            perc_sum += perc
+            if ret:
+                zh_en_num += 1
             if idx == 0:
                 first = line_data
                 type_cls, score = self.get_data_type(first)        
@@ -194,7 +206,11 @@ class DataChecker:
                 logger.error(f" dataset {dataset_name} line {idx}: {info}")
             else:
                 right_num_line += 1
+
+        text_percent = perc_sum / num_line
         logger.info(f"check dataset {dataset_name} finished, right line {right_num_line} / total check line {idx + 1}")
+        logger.info(f"检查每行信息是否为中文或英文信息，总共检查{num_line}条，中英文数据{zh_en_num}条，中英文行数占比{zh_en_num/num_line*100:.2f}%, "
+                    f"中英文文本总量{text_percent*100:.2f}%, 示例数据：{str(line_data)[:1000]}")
 
 
 
