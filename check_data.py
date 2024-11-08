@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple
 from glob import glob
 
 from pydantic import BaseModel, ValidationError
+from charset_mnbvc import api
 
 from data_types import CodeData, ForumData, ParallelData, QaData, MultiQaData, \
     CommonData, MultiModelDataModel, CommitDataModel, expected_fields
@@ -20,8 +21,8 @@ class DataChecker:
     def check_file_size(self, file_path):
         file_size = os.path.getsize(file_path)
         if file_size > self.max_file_size:
-            logger.error(f"file size out of range, max size is {self.max_file_size/1024/1024}MB, get size {file_size/1024/1024:.2f}MB.")
-            raise ValueError(f"file size out of range, max size is {self.max_file_size/1024/1024}MB, get size {file_size/1024/1024:.2f}MB.")
+            logger.error(f"文件大小超出限制, 最大限制为{self.max_file_size/1024/1024}MB, 文件大小为{file_size/1024/1024:.2f}MB.")
+            raise ValueError(f"文件大小超出限制, 最大限制为{self.max_file_size/1024/1024}MB, 文件大小为{file_size/1024/1024:.2f}MB.")
 
     def read_head(self, dataset_path: str, k: int):
         with open(dataset_path, 'r', encoding='utf-8') as f:
@@ -56,6 +57,11 @@ class DataChecker:
                 keys = keys + sub_keys
         return set(keys)
     
+    def check_language_ratio(self, text: bytes) -> Tuple[int, float]:
+        '''检查中英文比例，要求输入为 bytes'''
+        ret, percentage = api.check_zh_en(text)
+        return ret, percentage
+
     def get_data_type(self, data: Dict) -> Tuple[BaseModel, float]:
         type_cls = None
         for data_type in self.type_list:
@@ -95,12 +101,12 @@ class DataChecker:
             if len(values) >= 3:
                 error_info += ', ...'
             if key == 'missing':
-                errors.append(f'missing error, missing keys: [{error_info}]')
+                errors.append(f'丢失部分字段, 丢失字段为: [{error_info}]')
             elif 'type' in key:
                 expected_type, _ = key.split('_')
-                errors.append(f'type error, error keys: [{error_info}], expected type `{expected_type}`')
+                errors.append(f'数据类型错误, 错误的 keys: [{error_info}], 可接受的类型 `{expected_type}`')
             else:
-                errors.append(f'other error, error keys: [{error_info}], error info: {key}')
+                errors.append(f'其他错误, 错误的 keys: [{error_info}], 错误信息: {key}')
         return '; '.join(errors)
     
     def check_line(
@@ -116,7 +122,7 @@ class DataChecker:
             return False, error_info
 
     def check_file(self, dataset_path: str, k: int):
-        logger.info(f'checking dataset: {dataset_path}')
+        logger.info(f'开始检查: {dataset_path}')
         self.check_file_size(dataset_path)
         if dataset_path.endswith('.parquet'):
             self.check_parquet(dataset_path, k)
@@ -127,22 +133,35 @@ class DataChecker:
         dataset_name = os.path.basename(dataset_path)
         datasets = self.read_head(dataset_path, k)
         right_num_line = 0
+        num_line = 0
+        zh_en_num = 0
+        perc_sum = 0
         for idx, line_data in enumerate(datasets):
+            num_line += 1
+            line_data_bytes = json.dumps(line_data).encode()
+            ret, perc = self.check_language_ratio(line_data_bytes)
+            perc_sum += perc
+            if ret:
+                zh_en_num += 1
             if idx == 0:
                 first = line_data
                 type_cls, score = self.get_data_type(first)        
                 if score == 1.0:
-                    logger.info(f"the type of dataset {dataset_name} is {type_cls.name()}")
+                    logger.info(f"数据集 {dataset_name} 的语料类型为 {type_cls.name()}")
                 elif score > 0:
-                    logger.warning(f"can not match data type, the most similar type of dataset {dataset_name} is {type_cls.name()}, similar score is {score:.4f}.")
+                    logger.warning(f"不符合任意一个语料类型, 数据集 {dataset_name} 最接近的语料类型为 {type_cls.name()}, 相似的为 {score:.4f}.")
                 else:
-                    logger.error("can not match any data type and can not find similar data type.")
+                    logger.error(f"数据集 {dataset_name} 不符合任意一个语料类型，也没有相近的语料类型.")
             is_matched, info = self.check_line(line_data, type_cls)
             if not is_matched:
-                logger.error(f" dataset {dataset_name} line {idx}: {info}")
+                logger.error(f"数据集 {dataset_name} 错误, 行号: {idx}, 错误信息: {info}")
             else:
                 right_num_line += 1
-        logger.info(f"check dataset {dataset_name} finished, right line {right_num_line} / total check line {idx + 1}")
+        
+        text_percent = perc_sum / num_line
+        logger.info(f"数据集 {dataset_name} 检查完毕, 正确行数 {right_num_line} / 总行数 {idx + 1}")
+        logger.info(f"检查每行信息是否为中文或英文信息，总共检查{num_line}条，中英文数据{zh_en_num}条，中英文行数占比{zh_en_num/num_line*100:.2f}%, "
+                    f"中英文文本总量{text_percent:.2f}%, 示例数据：{str(line_data)[:1000]}")
     
     def check_parquet(self, dataset_path: str, k: int):
         dataset_name = os.path.basename(dataset_path)
@@ -153,34 +172,47 @@ class DataChecker:
         not_match_keys = []
         for name, expected_type in expected_fields.items():
             if name not in actual_fields:
-                lost_keys.append(f"can not match MutilModel data type, lost key {name}")
+                lost_keys.append(f"丢失的字段: {name}")
                 continue
             if actual_fields[name] != expected_type and actual_fields[name] != "null":
-                not_match_keys.append(f"key {name} data type not match, expected {expected_type}, got {actual_fields[name]}"  )  
+                not_match_keys.append(f"字段 {name} 数据格式不符合, 允许的类型: {expected_type}, 实际类型: {actual_fields[name]}"  )  
 
         if len(lost_keys) or len(not_match_keys):
             error = '\n'.join(lost_keys + not_match_keys)
             logger.warning(error)
-        logger.info(f"check dataset {dataset_name} finished, schema is right")
+        logger.info(f"数据集抬头 {dataset_name} 检查完毕, schema 格式正确")
 
         datasets = self.read_parquet_head(dataset_path, k)
         right_num_line = 0
+        num_line = 0
+        zh_en_num = 0
+        perc_sum = 0
         for idx, line_data in enumerate(datasets):
+            num_line += 1
+            line_data_bytes = json.dumps(line_data).encode()
+            ret, perc = self.check_language_ratio(line_data_bytes)
+            perc_sum += perc
+            if ret:
+                zh_en_num += 1
             if idx == 0:
                 first = line_data
                 type_cls, score = self.get_data_type(first)        
                 if score == 1.0:
-                    logger.info(f"the type of dataset {dataset_name} is {type_cls.name()}")
+                    logger.info(f"数据集 {dataset_name} 格式为 {type_cls.name()}, 符合预期")
                 elif score > 0:
-                    logger.warning(f"can not match data type, the most similar type of dataset {dataset_name} is {type_cls.name()}, similar score is {score:.4f}.")
+                    logger.warning(f"不符合任意一个语料类型, 数据集 {dataset_name} 最接近的语料类型为 {type_cls.name()}, 相似的为 {score:.4f}.")
                 else:
-                    logger.error("can not match any data type and can not find similar data type.")
+                    logger.error(f"数据集 {dataset_name} 不符合任意一个语料类型，也没有相近的语料类型.")
             is_matched, info = self.check_line(line_data, type_cls)
             if not is_matched:
-                logger.error(f" dataset {dataset_name} line {idx}: {info}")
+                logger.error(f"数据集 {dataset_name} 错误, 行号: {idx}, 错误信息: {info}")
             else:
                 right_num_line += 1
-        logger.info(f"check dataset {dataset_name} finished, right line {right_num_line} / total check line {idx + 1}")
+
+        text_percent = perc_sum / num_line
+        logger.info(f"数据集 {dataset_name} 检查完毕, 正确行数 {right_num_line} / 总行数 {idx + 1}")
+        logger.info(f"检查每行信息是否为中文或英文信息，总共检查{num_line}条，中英文数据{zh_en_num}条，中英文行数占比{zh_en_num/num_line*100:.2f}%, "
+                    f"中英文文本总量{text_percent:.2f}%, 示例数据：{str(line_data)[:1000]}")
 
 
 
@@ -203,9 +235,9 @@ class DataChecker:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, required=True, help='dataset path or dataset dir')
-    parser.add_argument('--k', type=int, required=False, help='check top k line of each file')
-    parser.add_argument('--use_pyarrow', action='store_true', help='check top k line of each file')
+    parser.add_argument('--dataset', type=str, required=True, help='数据集目录或路径')
+    parser.add_argument('--k', type=int, required=False, help='检查前 k 行, 默认检查所有行')
+    parser.add_argument('--use_pyarrow', action='store_true', help='检查 parquet 文件时选择')
     args = parser.parse_args()
     
     if args.use_pyarrow:
