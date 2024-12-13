@@ -105,34 +105,6 @@ class ForumData(BaseModel):
     def name(cls):
         return '论坛语料格式'
 
-class ParallelParagraph(BaseModel):
-    行号: int
-    是否重复: bool
-    是否跨文件重复: bool
-    zh_text_md5: str
-    zh_text: str
-    en_text: str
-    ar_text: str
-    nl_text: str
-    de_text: str
-    eo_text: str
-    fr_text: str
-    he_text: str
-    it_text: str
-    ja_text: str
-    pt_text: str
-    ru_text: str
-    es_text: str
-    sv_text: str
-    ko_text: str
-    th_text: str
-    id_text: str
-    vi_text: str
-    cht_text: str
-    other1_text: str
-    other2_text: str
-    扩展字段: str
-
 
 class ParallelData(BaseModel):
     文件名: str
@@ -141,9 +113,31 @@ class ParallelData(BaseModel):
     段落数: int
     去重段落数: int
     低质量段落数: int
-    段落: List[ParallelParagraph]
+    行号: int
+    是否重复: bool
+    是否跨文件重复: bool
+    it_text: str
+    zh_text: str
+    en_text: str
+    ar_text: str
+    nl_text: str
+    de_text: str
+    eo_text: str
+    fr_text: str
+    he_text: str
+    ja_text: str
+    pt_text: str
+    ru_text: str
+    es_text: str
+    sv_text: str
+    ko_text: str
+    th_text: str
+    id_text: str
+    cht_text: str
+    vi_text: str
     扩展字段: str
     时间: str
+    zh_text_md5: str
 
     @classmethod
     def name(cls):
