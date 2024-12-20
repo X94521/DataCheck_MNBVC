@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 from collections import defaultdict
 from typing import Dict, List, Tuple
 from glob import glob
@@ -29,7 +30,6 @@ class DataChecker:
             for idx, line in enumerate(f):
                 if k is not None and k > 0 and idx >= k:
                     break
-                print(line)
                 yield json.loads(line)
 
     def read_parquet_head(self, dataset_path: str, k: int):
@@ -140,7 +140,6 @@ class DataChecker:
 
         not_zh_en_line = ''
         for idx, line_data in enumerate(datasets):
-            num_line += 1
             if idx == 0:
                 first = line_data
                 type_cls, score = self.get_data_type(first)        
@@ -153,13 +152,15 @@ class DataChecker:
             
             # 如果不是平行语料格式，需要检查中英文比例
             if not isinstance(type_cls, ParallelData):
-                line_data_bytes = json.dumps(line_data, ensure_ascii=False).encode()
-                ret, perc = self.check_language_ratio(line_data_bytes)
-                perc_sum += perc
-                if ret:
-                    zh_en_num += 1
-                else:
-                    not_zh_en_line = line_data
+                if random.random() > 0.9:
+                    num_line += 1
+                    line_data_bytes = json.dumps(line_data, ensure_ascii=False).encode()
+                    ret, perc = self.check_language_ratio(line_data_bytes)
+                    perc_sum += perc
+                    if ret:
+                        zh_en_num += 1
+                    else:
+                        not_zh_en_line = line_data
 
             is_matched, info = self.check_line(line_data, type_cls)
             if not is_matched:
@@ -167,9 +168,9 @@ class DataChecker:
             else:
                 right_num_line += 1
         
-        text_percent = perc_sum / num_line
         logger.info(f"数据集 {dataset_name} 检查完毕, 正确行数 {right_num_line} / 总行数 {idx + 1}")
-        if not isinstance(type_cls, ParallelData):
+        if not isinstance(type_cls, ParallelData) and num_line > 0:
+            text_percent = perc_sum / num_line
             logger.info(f"检查每行信息是否为中文或英文信息，总共检查{num_line}条，中英文数据{zh_en_num}条，中英文行数占比{zh_en_num/num_line*100:.2f}%, "
                         f"中英文文本总量{text_percent:.2f}%")
             if not_zh_en_line:
