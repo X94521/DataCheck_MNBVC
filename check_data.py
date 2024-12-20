@@ -140,7 +140,7 @@ class DataChecker:
         not_zh_en_line = ''
         for idx, line_data in enumerate(datasets):
             num_line += 1
-            line_data_bytes = json.dumps(line_data).encode()
+            line_data_bytes = json.dumps(line_data, ensure_ascii=False).encode()
             ret, perc = self.check_language_ratio(line_data_bytes)
             perc_sum += perc
             if ret:
@@ -198,7 +198,7 @@ class DataChecker:
         not_zh_en_line = ''
         for idx, line_data in enumerate(datasets):
             num_line += 1
-            line_data_bytes = json.dumps(line_data).encode()
+            line_data_bytes = json.dumps(line_data, ensure_ascii=False).encode()
             ret, perc = self.check_language_ratio(line_data_bytes)
             perc_sum += perc
             if ret:
