@@ -29,6 +29,7 @@ class DataChecker:
             for idx, line in enumerate(f):
                 if k is not None and k > 0 and idx >= k:
                     break
+                print(line)
                 yield json.loads(line)
 
     def read_parquet_head(self, dataset_path: str, k: int):
@@ -140,14 +141,6 @@ class DataChecker:
         not_zh_en_line = ''
         for idx, line_data in enumerate(datasets):
             num_line += 1
-            line_data_bytes = json.dumps(line_data, ensure_ascii=False).encode()
-            ret, perc = self.check_language_ratio(line_data_bytes)
-            perc_sum += perc
-            if ret:
-                zh_en_num += 1
-            else:
-                not_zh_en_line = line_data
-
             if idx == 0:
                 first = line_data
                 type_cls, score = self.get_data_type(first)        
@@ -157,6 +150,17 @@ class DataChecker:
                     logger.warning(f"不符合任意一个语料类型, 数据集 {dataset_name} 最接近的语料类型为 {type_cls.name()}, 相似的为 {score:.4f}.")
                 else:
                     logger.error(f"数据集 {dataset_name} 不符合任意一个语料类型，也没有相近的语料类型.")
+            
+            # 如果不是平行语料格式，需要检查中英文比例
+            if not isinstance(type_cls, ParallelData):
+                line_data_bytes = json.dumps(line_data, ensure_ascii=False).encode()
+                ret, perc = self.check_language_ratio(line_data_bytes)
+                perc_sum += perc
+                if ret:
+                    zh_en_num += 1
+                else:
+                    not_zh_en_line = line_data
+
             is_matched, info = self.check_line(line_data, type_cls)
             if not is_matched:
                 logger.error(f"数据集 {dataset_name} 错误, 行号: {idx}, 错误信息: {info}")
@@ -165,10 +169,11 @@ class DataChecker:
         
         text_percent = perc_sum / num_line
         logger.info(f"数据集 {dataset_name} 检查完毕, 正确行数 {right_num_line} / 总行数 {idx + 1}")
-        logger.info(f"检查每行信息是否为中文或英文信息，总共检查{num_line}条，中英文数据{zh_en_num}条，中英文行数占比{zh_en_num/num_line*100:.2f}%, "
-                    f"中英文文本总量{text_percent:.2f}%")
-        if not_zh_en_line:
-            logger.info(f"非中英文示例数据: {str(not_zh_en_line)[:1000]}")
+        if not isinstance(type_cls, ParallelData):
+            logger.info(f"检查每行信息是否为中文或英文信息，总共检查{num_line}条，中英文数据{zh_en_num}条，中英文行数占比{zh_en_num/num_line*100:.2f}%, "
+                        f"中英文文本总量{text_percent:.2f}%")
+            if not_zh_en_line:
+                logger.info(f"非中英文示例数据: {str(not_zh_en_line)[:1000]}")
     
     def check_parquet(self, dataset_path: str, k: int):
         dataset_name = os.path.basename(dataset_path)
