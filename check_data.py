@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
     log_dir = './logs/'
     os.makedirs(log_dir, exist_ok=True)
-    fh = logging.FileHandler(os.path.join(log_dir, 'check_log.txt'))
+    fh = logging.FileHandler(os.path.join(log_dir, 'check_log.txt'), encoding='utf-8')
     fh.setLevel(logging.INFO)
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
