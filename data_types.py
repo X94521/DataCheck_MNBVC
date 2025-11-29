@@ -21,7 +21,7 @@ class QaMetaData(BaseModel):
             raise e
 
 class QaData(BaseModel):
-    id: int
+    id: str
     问: str
     答: str
     来源: str
@@ -94,7 +94,7 @@ class ForumResponse(BaseModel):
 
 
 class ForumData(BaseModel):
-    ID: int
+    ID: str
     主题: str
     来源: str
     回复: List[ForumResponse]
